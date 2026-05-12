@@ -9,7 +9,7 @@ export async function dbConnect() {
         console.log(`DB CONNECTION SUCCESSFULL:${connectionInstance.connection.host}`);
         
     } catch (error) {
-        console.error("SOMETHING WENT WRONG WHILE CONNECTING TO DATABASE!!!");
+        console.error("SOMETHING WENT WRONG WHILE CONNECTING TO DATABASE!!!"+error.message);
         process.exit(1)
     }
     
