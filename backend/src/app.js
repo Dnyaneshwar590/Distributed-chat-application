@@ -2,7 +2,7 @@ import express, { json } from "express"
 import cookieParser from "cookie-parser";
 
 
-import userRoutes from "./routes/user.route.js"
+import userRoutes from "./routes/auth.route.js"
 
 const app = express();
 
