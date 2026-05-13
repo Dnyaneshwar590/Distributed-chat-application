@@ -6,28 +6,27 @@ import { Session } from "../models/session.model.js"
 import { generateAccessToken, generateRefreshToken } from "../utils/generateToken.js"
 
 
-export async function register(req,res){
+export async function register(req, res) {
     try {
-        
+
         // take user credentials
-        const {username, password, email} = req.body
+        const { username, password, email } = req.body
 
         // check if user sent all data or not
-        if(!username || !password || !email){
+        if (!username || !password || !email) {
             return res.status(400).json({
-                success : false,
-                message : "All fields are required!"
+                success: false,
+                message: "All fields are required!"
             })
         }
 
         // check if user already exist or not
         // ".exists()"" returns object with "_id" if at least one document exist in db with given filter 
         const existingUser = await User.exists({
-            $or : [{email},{username}]
+            $or: [{ email }, { username }]
         })
 
-        console.log("Existing User: "+existingUser._id);
-        if(existingUser){
+        if (existingUser) {
             return res.status(409).json({
                 success: false,
                 message: "User Already Exist!!"
@@ -35,49 +34,53 @@ export async function register(req,res){
         }
 
         // encrypt our password
-        const hashPassword = await bcrypt.hash(String(password),10);
+        const hashPassword = await bcrypt.hash(String(password), 10);
 
         // create new User and save
         const newUser = new User({
             username, email,
-            password : hashPassword
+            password: hashPassword
         })
         await newUser.save();
 
+        console.log(newUser);
+        
         // send successfull message as response
         res.status(201).json({
             success: true,
             message: "Registration Successfull",
             data: {
-                id : newUser._id,
+                // id: newUser._id,
                 email: newUser.email
             }
         })
-        
+
     } catch (error) {
+        console.log("Registration Controller Error" + error.message);
+
         res.status(500).json({
-            success : false,
+            success: false,
             message: "Internal Server Error."
         })
     }
 }
 
-export async function login(req,res) {
+export async function login(req, res) {
 
     try {
         const { username, password } = req.body;
 
         // check if user sent all data or not
-        if(!username || !password){
+        if (!username || !password) {
             return res.status(400).json({
-                success : false,
-                message : "All fields are required!"
+                success: false,
+                message: "All fields are required!"
             })
         }
 
         // check if user exist or not 
-        const existingUser = await User.findOne({username})
-        if(!existingUser){
+        const existingUser = await User.findOne({ username })
+        if (!existingUser) {
             return res.status(404).json({
                 success: false,
                 message: "User Not Found Please Register!"
@@ -85,8 +88,8 @@ export async function login(req,res) {
         }
 
         // check if password match or not
-        const isPasswordMatch = await bcrypt.compare(String(password),String(existingUser.password))
-        if(!isPasswordMatch){
+        const isPasswordMatch = await bcrypt.compare(String(password), String(existingUser.password))
+        if (!isPasswordMatch) {
             return res.status(401).json({
                 success: false,
                 message: "Invalid Credentials Please Provide the Valid User Name or Password"
@@ -94,26 +97,50 @@ export async function login(req,res) {
         }
 
 
+        const refreshTokenExpiry = new Date(
+            Date.now() + 7 * 24 * 60 * 60 * 1000
+        );
+
         // Set the JWT TOKEN in IN Cookies
         const access_token = generateAccessToken(existingUser)
         const refresh_token = generateRefreshToken(existingUser)
 
-
-        // Store Refreshtoken in Session model
-        const session = new Session({
+        const existingSession = await Session.findOne({
             user: existingUser._id,
-            refreshToken: refresh_token
+            device: "web",
+            isActive: true
         })
 
-        await session.save();
+        if (existingSession) {
 
-        res.cookie("accessToken", access_token,{
+            existingSession.refreshToken = refresh_token;
+
+            existingSession.expiresAt = refreshTokenExpiry;
+
+            existingSession.lastActivity = new Date();
+
+            await existingSession.save();
+
+        } else {
+
+            // Store Refreshtoken in Session model
+            await Session.create({
+                user: existingUser._id,
+                refreshToken: refresh_token,
+                device: "web",
+                ipAddress: req.ip,
+                expiresAt: refreshTokenExpiry
+            });
+
+        }
+
+        res.cookie("accessToken", access_token, {
             httpOnly: true,
             secure: true,
             sameSite: "strict",
             maxAge: 15 * 60 * 1000
         })
-        res.cookie("refreshToken", refresh_token,{
+        res.cookie("refreshToken", refresh_token, {
             httpOnly: true,
             secure: true,
             sameSite: "strict",
@@ -124,20 +151,20 @@ export async function login(req,res) {
             success: true,
             message: "Login Successfull",
             data: {
-                id : existingUser._id,
+                id: existingUser._id,
                 email: existingUser.email,
             }
         })
 
-        
+
     } catch (error) {
-        console.error("Login Controller Error: "+error.message);
+        console.error("Login Controller Error: " + error.message);
         res.status(500).json({
             success: false,
             message: "Internal Server Error"
         })
     }
-    
+
 }
 
 
@@ -203,6 +230,58 @@ export async function refreshAccessToken(req, res) {
         return res.status(401).json({
             success: false,
             message: "Invalid or expired refresh token"
+        });
+    }
+}
+
+
+// we check for only refreshtoken cause refreshtoken 
+// actually stores contains session for long-term
+export async function logout(req, res) {
+    try {
+        // check if refreshtoken from backend exist or not 
+        const refreshToken = req.cookies?.refreshToken;
+        if (!refreshToken) {
+            return res.status(400).json({
+                success: false,
+                message: "Refresh token not found"
+            });
+        }
+
+
+        // Delete refreshtoken from database
+        await Session.deleteOne({
+            refreshToken
+        });
+
+        // Clear Cookies from frontend (Stored in Cookies)
+        res.clearCookie("accessToken", {
+            httpOnly: true,
+            secure: true,
+            sameSite: "strict"
+        });
+
+        res.clearCookie("refreshToken", {
+            httpOnly: true,
+            secure: true,
+            sameSite: "strict"
+        });
+
+        // send Success response to frontend
+        return res.status(200).json({
+            success: true,
+            message: "Logout successful"
+        });
+
+    } catch (error) {
+        console.error(
+            "Logout Controller Error:",
+            error.message
+        );
+
+        return res.status(401).json({
+            success: false,
+            message: "Internal Server Error!!"
         });
     }
 }
