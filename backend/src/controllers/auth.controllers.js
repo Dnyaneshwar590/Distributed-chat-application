@@ -193,7 +193,8 @@ export async function refreshAccessToken(req, res) {
         const existingSession = await Session.findOne({
             refreshToken
         });
-
+        
+        
         if (!existingSession) {
             return res.status(401).json({
                 success: false,
@@ -201,11 +202,19 @@ export async function refreshAccessToken(req, res) {
             });
         }
 
+        // fetch user details from User model
+        const user = await User.findOne({
+            _id:decoded.id
+        })
+        
+
         // Generate new access token
         const newAccessToken = generateAccessToken({
-            _id: decoded.id,
-            username: decoded.username
+            _id: user._id,
+            username: user.username,
+            email: user.email
         });
+        
 
         // Send new access token in cookie
         res.cookie("accessToken", newAccessToken, {
