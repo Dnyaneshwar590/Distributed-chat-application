@@ -1,5 +1,6 @@
 import { Message } from "../models/message.model.js";
 import { Conversation } from "../models/conversation.model.js";
+import { io } from "../socket.js"
 
 export async function createMessage(req, res) {
 
@@ -65,6 +66,12 @@ export async function createMessage(req, res) {
                 "sender",
                 "username email");
 
+        // REAL TIME COMMUNICATION
+        io.to(conversationId).emit(
+            "new_message",
+            populatedMessage
+        );
+
         return res.status(201).json({
             success: true,
             message: "Message sent successfully",
@@ -81,6 +88,72 @@ export async function createMessage(req, res) {
         return res.status(500).json({
             success: false,
             message: "Internal Server Error"
+        });
+
+    }
+
+}
+
+export async function getMessage(req, res) {
+
+    try {
+
+        const { conversationId } = req.params;
+        const limit = Number(req.query.limit) || 20;
+        const { cursor } = req.query;
+
+        // Check conversation exists
+        const existingConversation = await Conversation.findById(conversationId);
+
+        if (!existingConversation) {
+            return res.status(404).json({
+                success: false,
+                message: "Conversation Not Found."
+            });
+        }
+
+        // Query object
+        const query = { conversationId };
+
+        // Cursor pagination Fetch older messages
+        if (cursor) {
+            query._id = {
+                $lt: cursor
+            };
+        }
+
+        // Fetch messages
+        const messages = await Message.find(query)
+            .populate(
+                "sender",
+                "username email"
+            )
+            .sort({
+                _id: -1
+            })
+            .limit(limit);
+
+        // Next cursor
+        const nextCursor = messages.length === limit ?
+            messages[messages.length - 1]._id :
+            null;
+
+        const formattedMessages = messages.reverse();
+
+        return res.status(200).json({
+            success: true,
+            data: formattedMessages,
+            nextCursor,
+            hasMore: Boolean(nextCursor)
+        });
+
+    } catch (error) {
+
+        console.error("Get Message Controller Error:", error.message);
+        return res.status(500).json({
+            success: false,
+            message:
+                "Internal Server Error"
         });
 
     }

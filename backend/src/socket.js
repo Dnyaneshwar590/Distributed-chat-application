@@ -10,19 +10,36 @@ const io = new Server(server, {
   }
 });
 
-/*
-  Socket connections
-*/
+// Socket connections
 io.on("connection", (socket) => {
 
-  console.log("User connected:", socket.id);
+  console.log(
+    "User connected:",
+    socket.id
+  );
 
-  socket.on("message", (data) => {
-    console.log(data);
-  });
+  //Join conversation room
+  socket.on(
+    "join_conversation",
+    (conversationId) => {
 
+      socket.join(conversationId);
+
+      console.log(
+        `Socket joined room: ${conversationId}`
+      );
+
+    }
+  );
+
+  // Disconnect
   socket.on("disconnect", () => {
-    console.log("User disconnected");
+
+    console.log(
+      "User disconnected:",
+      socket.id
+    );
+
   });
 
 });
