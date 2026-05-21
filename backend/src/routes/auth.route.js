@@ -9,11 +9,6 @@ router.route("/auth/login").post(login)
 router.route("/auth/access-token").post(refreshAccessToken)
 router.route("/auth/logout").post(logout)
 
-router.route("/me").get(verifyAccessToken,(req,res)=>{
-    console.log(req.user);
-    
-    return res.send("Hello world")
-})
 
 
 export default router;

@@ -159,3 +159,59 @@ export async function getMessage(req, res) {
     }
 
 }
+
+// Controller Functino to Read Message
+export async function readMessage(req, res) {
+    try {
+
+        // if the message in not readed and only 
+        // and that message can ready by login and valid user
+        const { conversationId } = req.params;
+        const { id: userId } = req.user;
+
+
+        const existingConversation = await Conversation.findById(conversationId);
+        if (!existingConversation) {
+            return res.status(404).json({
+                success: false,
+                message: "Conversation Not Found."
+            });
+        }
+
+        // check for participente
+        const isParticipant = existingConversation.participants.includes(userId)
+        if (!isParticipant) {
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized access"
+            });
+        }
+
+        // update all message 
+        await Message.updateMany({
+            conversationId,
+            sender: { $ne: userId }, // $ne means not equal and sender is not current user 
+            readBy: { $ne: userId }  // readBy has not readed the message
+        },
+            {
+                $push: { readBy: userId } // append a specific value at the end of an array
+            });
+
+        io.to(conversationId).emit("messages_read", {
+            conversationId,
+            userId
+        });
+
+        res.status(200).json({
+            success: true,
+            message: "Message mark as read"
+        })
+
+    } catch (error) {
+        console.error("Read Message Controller Error: " + error.message);
+        res.status(500).json({
+            success: false,
+            message: "Internal Server Error."
+        })
+    }
+}

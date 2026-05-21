@@ -59,7 +59,7 @@ export async function createConversation(req, res) {
 
     } catch (error) {
 
-        console.log("Create Conversation Controller Error:" + error.message);
+        console.error("Create Conversation Controller Error:" + error.message);
 
         return res.status(500).json({
             success: false,
@@ -91,7 +91,7 @@ export async function getConversation(req, res) {
 
       .populate("participants", "username avatar")
       .populate("lastMessage");
-    console.log(currentUsersConversation);
+  
     
 
     // If conversation does not exist
