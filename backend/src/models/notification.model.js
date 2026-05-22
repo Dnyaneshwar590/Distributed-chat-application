@@ -1,41 +1,62 @@
-// models/notification.model.js
-
 import mongoose from "mongoose";
 
-const notificationSchema = new mongoose.Schema(
-  {
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true
-    },
+const notificationSchema =
+  new mongoose.Schema(
+    {
+      user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true
+      },
 
-    sender: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User"
-    },
+      sender: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"
+      },
 
-    conversationId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Conversation"
-    },
+      conversationId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Conversation",
+        default: null
+      },
 
-    text: {
-      type: String,
-      required: true
-    },
+      connectionId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "UserConnection",
+        default: null
+      },
 
-    isRead: {
-      type: Boolean,
-      default: false
+      type: {
+        type: String,
+
+        enum: [
+          "message",
+          "connection_request",
+          "connection_accepted",
+          "blocked"
+        ],
+
+        required: true
+      },
+
+      text: {
+        type: String,
+        required: true
+      },
+
+      isRead: {
+        type: Boolean,
+        default: false
+      }
+
+    },
+    {
+      timestamps: true
     }
-  },
-  {
-    timestamps: true
-  }
 );
 
-export const Notification = mongoose.model(
-  "Notification",
-  notificationSchema
+export const Notification =
+  mongoose.model(
+    "Notification",
+    notificationSchema
 );

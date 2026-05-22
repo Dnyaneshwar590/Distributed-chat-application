@@ -21,7 +21,6 @@ export async function createMessage(req, res) {
             });
         }
 
-
         // check for existing conversation does exist or not
         const existingConversation =
             await Conversation.findById(
@@ -160,7 +159,7 @@ export async function getMessage(req, res) {
 
 }
 
-// Controller Functino to Read Message
+// Controller function to Read Message
 export async function readMessage(req, res) {
     try {
 
