@@ -3,6 +3,7 @@ import { UserConnection } from "../models/userConnection.model.js";
 import { User } from "../models/user.model.js"
 import { Notification } from "../models/notification.model.js";
 import { io } from "../socket.js"
+import { IncomingMessage } from "http";
 
 export async function sendConnectionRequest(req, res) {
 
@@ -17,12 +18,16 @@ export async function sendConnectionRequest(req, res) {
             })
         }
 
-        const users = [
-            new mongoose.Types.ObjectId(userId),
-            new mongoose.Types.ObjectId(friendRequestUserId)
-        ].sort();
-
-        const existingConnection = await UserConnection.findOne({ users })
+        const existingConnection = await UserConnection.findOne({
+            $or: [{
+                  sender: userId,
+                  receiver: friendRequestUserId
+               },
+               {
+                  sender:friendRequestUserId,
+                  receiver: userId
+               }]
+         });
 
         if (existingConnection) {
             // check if sender is blocked 
@@ -50,10 +55,9 @@ export async function sendConnectionRequest(req, res) {
             }
         }
 
-
         const connection = await UserConnection.create({
-            users,
-            requestedBy: userId,
+            sender : userId,
+            receiver : friendRequestUserId,
             status: "pending"
         });
 
@@ -94,10 +98,48 @@ export async function sendConnectionRequest(req, res) {
 
 }
 
+export async function getIncomingConnectionRequests(req,res){
+    try{
+        const { id: userId } = req.user;
+        
+        const incomingRequest = await UserConnection.find({
+            receiver : userId,
+            status : "pending"
+        })
+        .populate("sender", "_id username email")
+        .sort({ createdAt: -1 });
+
+      return res.status(200)
+         .json({
+            success: true,
+            count: incomingRequest.length,
+            data: incomingRequest
+         });
+        
+    }catch(error){
+        console.error("Get Incoming Connection Requests Controller Error: "+ error.message);
+        res.status(500).json({
+            success : false,
+            message : "Internal Server Error"
+        })
+    }
+}
+
 
 export async function updateConnectionRequest(req,res){
     try {
         const { id : userId } = req.user;
+        const { connReqUserId } = req.params;
+
+        const user = [
+            new mongoose.Types.ObjectId(userId),
+            new mongoose.Types.ObjectId(connReqId)
+        ].sort();
+
+        console.log("Users:"+user);
+        
+        
+
         
         
     } catch (error) {

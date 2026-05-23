@@ -4,15 +4,16 @@ const userConnectionSchema =
   new mongoose.Schema(
     {
 
-      users: [
-        {
-          type:
-            mongoose.Schema.Types.ObjectId,
-          ref: "User",
-          required: true,
-        }
-      ],
+      sender: {type:mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true
+      },
 
+      receiver: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true
+      },
 
       //   for later updates
       status: {
