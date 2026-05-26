@@ -10,7 +10,7 @@ const router = Router()
 
 router.route("/connection/send-connection-request").post(verifyAccessToken,sendConnectionRequest);
 router.route("/connection/get-connection-request").get(verifyAccessToken,getIncomingConnectionRequests);
-router.route("/connection/update-connection-request/:connReqId").patch(verifyAccessToken,updateConnectionRequest);
+router.route("/connection/update-connection-request").patch(verifyAccessToken,updateConnectionRequest);
 
 
 

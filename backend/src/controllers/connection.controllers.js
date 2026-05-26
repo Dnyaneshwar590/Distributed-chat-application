@@ -1,9 +1,8 @@
-import mongoose from "mongoose";
+
 import { UserConnection } from "../models/userConnection.model.js";
 import { User } from "../models/user.model.js"
 import { Notification } from "../models/notification.model.js";
 import { io } from "../socket.js"
-import { IncomingMessage } from "http";
 
 export async function sendConnectionRequest(req, res) {
 
@@ -20,14 +19,14 @@ export async function sendConnectionRequest(req, res) {
 
         const existingConnection = await UserConnection.findOne({
             $or: [{
-                  sender: userId,
-                  receiver: friendRequestUserId
-               },
-               {
-                  sender:friendRequestUserId,
-                  receiver: userId
-               }]
-         });
+                sender: userId,
+                receiver: friendRequestUserId
+            },
+            {
+                sender: friendRequestUserId,
+                receiver: userId
+            }]
+        });
 
         if (existingConnection) {
             // check if sender is blocked 
@@ -56,8 +55,8 @@ export async function sendConnectionRequest(req, res) {
         }
 
         const connection = await UserConnection.create({
-            sender : userId,
-            receiver : friendRequestUserId,
+            sender: userId,
+            receiver: friendRequestUserId,
             status: "pending"
         });
 
@@ -98,56 +97,110 @@ export async function sendConnectionRequest(req, res) {
 
 }
 
-export async function getIncomingConnectionRequests(req,res){
-    try{
+export async function getIncomingConnectionRequests(req, res) {
+    try {
         const { id: userId } = req.user;
-        
-        const incomingRequest = await UserConnection.find({
-            receiver : userId,
-            status : "pending"
-        })
-        .populate("sender", "_id username email")
-        .sort({ createdAt: -1 });
 
-      return res.status(200)
-         .json({
-            success: true,
-            count: incomingRequest.length,
-            data: incomingRequest
-         });
-        
-    }catch(error){
-        console.error("Get Incoming Connection Requests Controller Error: "+ error.message);
+        const incomingRequest = await UserConnection.find({
+            receiver: userId,
+            status: "pending"
+        })
+            .populate("sender", "_id username email")
+            .sort({ createdAt: -1 });
+
+        return res.status(200)
+            .json({
+                success: true,
+                count: incomingRequest.length,
+                data: incomingRequest
+            });
+
+    } catch (error) {
+        console.error("Get Incoming Connection Requests Controller Error: " + error.message);
         res.status(500).json({
-            success : false,
-            message : "Internal Server Error"
+            success: false,
+            message: "Internal Server Error"
         })
     }
 }
 
 
-export async function updateConnectionRequest(req,res){
+export async function updateConnectionRequest(req, res) {
     try {
-        const { id : userId } = req.user;
-        const { connReqUserId } = req.params;
+        const { id: userId } = req.user;
+        const { senderId, status } = req.body;
 
-        const user = [
-            new mongoose.Types.ObjectId(userId),
-            new mongoose.Types.ObjectId(connReqId)
-        ].sort();
+        // Allowed statuses
+        const allowedStatus = ["accepted", "rejected", "blocked"];
 
-        console.log("Users:"+user);
-        
-        
+        if (!allowedStatus.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid status."
+            });
+        }
 
-        
-        
+        // Find exact connection request
+        const existingConnection = await UserConnection.findOne({
+            sender: senderId,
+            receiver: userId,
+            status: "pending"
+        });
+
+        if (!existingConnection) {
+            return res.status(404).json({
+                success: false,
+                message: "Connection request not found."
+            });
+        }
+
+        // Update status
+        existingConnection.status = status;
+        await existingConnection.save();
+
+        // receiver details
+        const receiverDetails = await User.findById(userId);
+
+        let notificationType = "";
+        let notificationText = "";
+
+        if (status === "accepted") {
+            notificationType = "connection_accepted";
+            notificationText = `${receiverDetails.username} accepted your connection request`;
+        }
+
+        if (status === "rejected") {
+            notificationType = "connection_request";
+            notificationText = `${receiverDetails.username} rejected your connection request`;
+        }
+
+        // create notification
+        const notification = await Notification.create({
+            user: senderId, // sender gets notification
+            sender: userId,
+            connectionId: existingConnection._id,
+            type: notificationType,
+            text: notificationText
+        });
+
+        // realtime socket notification
+        io.to(senderId).emit(
+            "new_notification",
+            notification
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: `Connection request ${status}.`,
+            data: existingConnection
+        });
+
     } catch (error) {
-        console.error("Update Connection Request Controller Error: "+ error.message);
-        res.status(500).json({
+        console.error("Update Connection Request Controller Error:", error.message);
+
+        return res.status(500).json({
             success: false,
             message: "Internal Server Error."
-        })
-        
+        });
     }
 }
