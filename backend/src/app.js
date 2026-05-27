@@ -1,5 +1,6 @@
 import express, { json } from "express"
 import cookieParser from "cookie-parser";
+import redis from "./redis/client.redis.js"
 
 
 import authRoutes from "./routes/auth.route.js"
