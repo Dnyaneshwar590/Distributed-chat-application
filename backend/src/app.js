@@ -1,8 +1,8 @@
 import express, { json } from "express"
 import cookieParser from "cookie-parser";
-import redis from "./redis/client.redis.js"
 
 
+// Routes
 import authRoutes from "./routes/auth.route.js"
 import userRoutes from "./routes/user.route.js"
 import conversationRoutes from "./routes/conversation.route.js"
@@ -21,6 +21,8 @@ app.use("/api/v1",userRoutes)
 app.use("/api/v1",conversationRoutes)
 app.use("/api/v1",messageRoutes)
 app.use("/api/v1",connectionRoutes)
+
+app.get("/test",)
 
 
 export { app }
