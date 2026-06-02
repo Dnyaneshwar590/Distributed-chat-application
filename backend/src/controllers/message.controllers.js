@@ -1,5 +1,6 @@
 import { Message } from "../models/message.model.js";
 import { Conversation } from "../models/conversation.model.js";
+import { UserConnection } from "../models/userConnection.model.js";
 import { io } from "../socket.js"
 
 export async function createMessage(req, res) {
@@ -8,11 +9,10 @@ export async function createMessage(req, res) {
 
         const { conversationId } = req.params; //conversation if from conversation model
         const { id: sender } = req.user; // logged In user id sender
-        const { content } = req.body; // message
+        const { content, receiverId } = req.body; // message
 
         // validate content
-        const trimmedContent =
-            content?.trim();
+        const trimmedContent = content?.trim();
 
         if (!trimmedContent) {
             return res.status(400).json({
@@ -21,12 +21,30 @@ export async function createMessage(req, res) {
             });
         }
 
-        // check for existing conversation does exist or not
-        const existingConversation =
-            await Conversation.findById(
-                conversationId
-            );
+          // check if user are Connected/Friends or not
+            const acceptedConnReq = await UserConnection.findOne({
+              $or: [
+                {
+                  sender: sender,
+                  receiver: receiverId,
+                },
+                {
+                  sender: receiverId,
+                  receiver: sender,
+                }
+              ]
+            })
+        
+            if (!acceptedConnReq || acceptedConnReq.status !== "accepted") {
+              return res.status(401).json({
+                success: false,
+                message: "You Cannot Send Message."
+              })
+            }
 
+        // check for existing conversation does exist or not
+        const existingConversation = await Conversation.findById(conversationId);
+        
         if (!existingConversation) {
             return res.status(404).json({
                 success: false,
@@ -35,9 +53,7 @@ export async function createMessage(req, res) {
         }
 
         //Check sender belongs to conversation
-        const isParticipant =
-            existingConversation.participants
-                .includes(sender);
+        const isParticipant = existingConversation.participants.includes(sender);
 
         if (!isParticipant) {
             return res.status(403).json({

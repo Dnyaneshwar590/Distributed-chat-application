@@ -7,7 +7,7 @@ const REFILL_DURATION = 10; // seconds
 export async function tokenBucket(req, res, next) {
 
     try {
-        const { username } = req.body;
+        const { username } = req.body || req.user;
         const { ip } = req;
 
         // Unique bucket key
@@ -67,7 +67,6 @@ export async function tokenBucket(req, res, next) {
             "EX",
             60
         );
-
         next();
 
     } catch (error) {

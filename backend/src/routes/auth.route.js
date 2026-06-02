@@ -7,8 +7,8 @@ const router = Router();
 
 router.route("/auth/register").post(tokenBucket, register)
 router.route("/auth/login").post(tokenBucket, login)
-router.route("/auth/access-token").post(refreshAccessToken)
-router.route("/auth/logout").post(logout)
+router.route("/auth/access-token").post(verifyAccessToken, tokenBucket, refreshAccessToken)
+router.route("/auth/logout").post(verifyAccessToken, tokenBucket, logout)
 
 
 

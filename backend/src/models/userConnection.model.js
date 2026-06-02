@@ -39,12 +39,8 @@ const userConnectionSchema =
   Prevent duplicate connections
 */
 userConnectionSchema.index(
-  { users: 1 },
+  { sender: 1, receiver: 1 },
   { unique: true }
 );
 
-export const UserConnection =
-  mongoose.model(
-    "UserConnection",
-    userConnectionSchema
-  );
+export const UserConnection = mongoose.models.UserConnection ||  mongoose.model("UserConnection",userConnectionSchema);

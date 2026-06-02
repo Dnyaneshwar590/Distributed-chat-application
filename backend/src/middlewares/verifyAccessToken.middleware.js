@@ -1,7 +1,5 @@
 import jwt from "jsonwebtoken"
 
-
-
 export function verifyAccessToken(req, res, next) {
 
     try {
