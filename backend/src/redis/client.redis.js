@@ -20,4 +20,7 @@ redis.on("error", (error) => {
     console.error("Redis connection error:", error.message);
 });
 
+export const publisher = redis.duplicate();
+export const subscriber = redis.duplicate();
+
 export default redis;

@@ -22,9 +22,6 @@ app.use("/api/v1",conversationRoutes)
 app.use("/api/v1",messageRoutes)
 app.use("/api/v1",connectionRoutes)
 
-app.get("/test",)
-
-
 export { app }
 
 

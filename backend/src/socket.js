@@ -2,13 +2,21 @@ import { Server } from "socket.io";
 import { app } from "./app.js";
 import http from "http";
 
+import { createAdapter } from "@socket.io/redis-adapter";
+import { publisher, subscriber } from "./redis/client.redis.js"
+import { socketAuthMiddleware } from "./middlewares/socketAuth.middleware.js"
+
 const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "*"
+    origin: process.env.URL || "*"
   }
 });
+
+// attach redis adapter
+io.adapter(createAdapter(publisher,subscriber))
+io.use(socketAuthMiddleware)
 
 // Socket connections
 io.on("connection", (socket) => {
