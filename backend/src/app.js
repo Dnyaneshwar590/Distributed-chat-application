@@ -1,5 +1,6 @@
 import express, { json } from "express"
 import cookieParser from "cookie-parser";
+import cors from "cors";
 
 
 // Routes
@@ -14,6 +15,19 @@ const app = express();
 app.use(express.urlencoded({extended: true}))
 app.use(json())
 app.use(cookieParser())
+
+app.use(cors({
+    origin : process.env.CLIENT_URL || "*",
+    methods : ['GET','POST','DELETE','PUT'],
+    // allowedHeaders : [
+    //     'Content-Type',
+    //     'Authorization',
+    //     'Cache-Control',
+    //     'Expires',
+    //     'Pragma'
+    // ],
+    credentials : true
+}))
 
 
 app.use("/api/v1/",authRoutes)

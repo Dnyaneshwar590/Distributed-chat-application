@@ -1,10 +1,10 @@
-import { server } from "./socket.js";
 import dotenv from "dotenv"
-import { dbConnect } from "./db/index.js";
-
 dotenv.config({
     path: "./.env"
 })
+import { server } from "./socket.js";
+import { dbConnect } from "./db/index.js";
+
 const PORT = process.env.PORT || 5000
 
 dbConnect()
