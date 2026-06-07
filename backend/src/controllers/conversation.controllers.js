@@ -106,7 +106,6 @@ export async function getConversation(req, res) {
         $eq: [{ $size: "$participants" }, 2]
       }
     })
-
       .populate("participants", "username avatar")
       .populate("lastMessage");
 
@@ -133,5 +132,54 @@ export async function getConversation(req, res) {
       success: false,
       message: "Internal Server Error."
     });
+  }
+}
+
+export async function getUserConversation(req, res) {
+
+  try {
+    const { id: userId } = req.user;
+
+    const validConnectionReq = await UserConnection.find({
+      status: "accepted",
+      $or: [
+        { sender: userId },
+        { receiver: userId }
+      ]
+    })
+
+    const connectedUserIds = validConnectionReq.map((connection) => {
+      return connection.sender.toString() === userId
+        ? connection.receiver
+        : connection.sender;
+    });
+
+
+    const conversations = await Conversation.find({
+      $and: [
+        { participants: userId },
+        { participants: { $in: connectedUserIds } }
+      ]
+    })
+      .populate(
+        "participants",
+        "fullName username"
+      )
+      .populate("lastMessage","content sender messageType mediaUrl")
+      .select("-admins -groupName");
+
+
+      res.status(200).json({
+        success: true,
+        data: conversations
+      })
+      
+
+  } catch (error) {
+    console.error("Get User Conversation Controller Error: " + error.message);
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error."
+    })
   }
 }
