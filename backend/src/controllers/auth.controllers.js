@@ -42,8 +42,6 @@ export async function register(req, res) {
             password: hashPassword
         })
         await newUser.save();
-
-        console.log(newUser);
         
         // send successfull message as response
         res.status(201).json({
@@ -56,7 +54,7 @@ export async function register(req, res) {
         })
 
     } catch (error) {
-        console.log("Registration Controller Error" + error.message);
+        console.error("Registration Controller Error" + error.message);
 
         res.status(500).json({
             success: false,

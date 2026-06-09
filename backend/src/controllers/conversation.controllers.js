@@ -161,19 +161,25 @@ export async function getUserConversation(req, res) {
         { participants: { $in: connectedUserIds } }
       ]
     })
-      .populate(
-        "participants",
-        "fullName username"
-      )
-      .populate("lastMessage","content sender messageType mediaUrl")
+      .populate("participants", "username")
+      .populate("lastMessage", "content sender messageType mediaUrl")
       .select("-admins -groupName");
 
+    const formattedConversations = conversations.map((conversation) => {
+      const otherParticipant = conversation.participants.find(
+        (participant) => participant._id.toString() !== userId
+      );
 
-      res.status(200).json({
-        success: true,
-        data: conversations
-      })
-      
+      return {
+        ...conversation.toObject(),
+        participant: otherParticipant,
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      data: formattedConversations,
+    });
 
   } catch (error) {
     console.error("Get User Conversation Controller Error: " + error.message);
