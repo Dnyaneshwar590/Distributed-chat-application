@@ -1,0 +1,71 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+
+
+/* HEADER */
+.chat-list-logo {
+  padding: 20px;
+  border-bottom: 1px solid #eee;
+  color: #111;
+}
+
+/* LIST */
+.chat-list-container {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* ITEM */
+.chat-list-item {
+  display: flex;
+  gap: 10px;
+  padding: 15px;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+  align-items: center;
+}
+
+.chat-list-item:hover {
+  background: #f9f9f9;
+}
+
+/* AVATAR */
+.chat-list-avatar {
+  width: 40px;
+  height: 40px;
+  background: #000;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: bold;
+}
+
+/* INFO */
+.chat-list-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-list-name {
+  font-weight: bold;
+  color: #111;
+}
+
+.chat-list-lastmsg {
+  font-size: 12px;
+  color: #777;
+}
+
+/* STATES */
+.chat-list-loading,
+.chat-list-empty {
+  padding: 20px;
+  color: #777;
+}
