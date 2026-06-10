@@ -74,10 +74,7 @@ export async function sendConnectionRequest(req, res) {
         await notification.save();
 
         // for real time communication 
-        io.to(friendRequestUserId).emit(
-            "new_notification",
-            notification
-        );
+        io.to(friendRequestUserId).emit("new_notification", notification);
 
         // return response
         return res.status(201).json({
@@ -203,4 +200,54 @@ export async function updateConnectionRequest(req, res) {
             message: "Internal Server Error."
         });
     }
+}
+
+// Returns all Accepted Connection with user do we did not have any conversation;
+export async function getAcceptedConnectionsWithoutConversation(req, res) {
+    try {
+        const { id: userId } = req.user;
+
+        const getAllConnection = await UserConnection.find({
+            $or: [
+                { sender: userId },
+                { receiver: userId },
+            ],
+            status: "accepted"
+        })
+            .populate("sender", "username email avatar")
+            .populate("receiver", "username email avatar");
+
+
+        // filter out only other user details should be sent 
+        const connectedUsers = getAllConnection.map((connection) => {
+
+            const otherUser =
+                connection.sender._id.toString() === userId
+                    ? connection.receiver
+                    : connection.sender;
+
+            return {
+                _id: otherUser._id,
+                username: otherUser.username,
+                email: otherUser.email,
+                avatar: otherUser.avatar,
+                connectionId: connection._id,
+                connectedAt: connection.createdAt
+            };
+        });
+
+
+        res.status(200).json({
+            success: true,
+            data : connectedUsers
+        })
+
+    } catch (error) {
+        console.error("Get Accepted Connections Withoud Conversation Controller Error: " + error.message);
+        res.status(500).json({
+            success: false,
+            message: "Internal Server Error!"
+        })
+    }
+
 }

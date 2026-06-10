@@ -22,32 +22,24 @@ io.use(socketAuthMiddleware)
 // Socket connections
 io.on("connection", (socket) => {
 
-  console.log(
-    "User connected:",
-    socket.id
-  );
+  const userId = socket.data.user?.id
+  console.log(userId);
+  
+    if (userId) {
+        socket.join(userId) 
+    }
 
   //Join conversation room
-  socket.on(
-    "join_conversation",
-    (conversationId) => {
-
+  socket.on( "join_conversation", (conversationId) => {
       socket.join(conversationId);
-
-      console.log(
-        `Socket joined room: ${conversationId}`
-      );
-
+      console.log(`Socket joined room: ${conversationId}`);
     }
   );
 
   // Disconnect
   socket.on("disconnect", () => {
 
-    console.log(
-      "User disconnected:",
-      socket.id
-    );
+    console.log("User disconnected:",socket.id);
 
   });
 
