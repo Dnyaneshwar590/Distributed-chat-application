@@ -221,8 +221,7 @@ export async function getAcceptedConnectionsWithoutConversation(req, res) {
         // filter out only other user details should be sent 
         const connectedUsers = getAllConnection.map((connection) => {
 
-            const otherUser =
-                connection.sender._id.toString() === userId
+            const otherUser = connection.sender._id.toString() === userId
                     ? connection.receiver
                     : connection.sender;
 

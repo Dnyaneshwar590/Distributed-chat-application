@@ -2,12 +2,14 @@ import { useState } from "react";
 import {
   MessageSquare,
   Users,
-  Bell
+  Bell,
+  MessageCirclePlus,
 } from "lucide-react";
 
 import ChatList from "./ChatList";
 import UserList from "./UserList";
 import FriendRequestList from "./FriendRequestList";
+import FriendChatList from "./FriendChatList";
 
 import "../styles/components/ChatSidebar.css";
 
@@ -24,6 +26,14 @@ export default function ChatSidebar({ onSelectUser }) {
           title="Chats"
         >
           <MessageSquare size={22} />
+        </button>
+
+        <button
+          className={activeTab === "newchat" ? "active" : ""}
+          onClick={() => setActiveTab("newchat")}
+          title="Start New Chat"
+        >
+          <MessageCirclePlus size={22} />
         </button>
 
         <button
@@ -45,8 +55,13 @@ export default function ChatSidebar({ onSelectUser }) {
       </div>
 
       <div className="sidebar-content">
+
         {activeTab === "chats" && (
           <ChatList onSelectUser={onSelectUser} />
+        )}
+
+        {activeTab === "newchat" && (
+          <FriendChatList onSelectUser={onSelectUser} />
         )}
 
         {activeTab === "users" && (
@@ -56,6 +71,7 @@ export default function ChatSidebar({ onSelectUser }) {
         {activeTab === "requests" && (
           <FriendRequestList />
         )}
+
       </div>
     </div>
   );
