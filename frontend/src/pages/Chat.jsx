@@ -8,18 +8,12 @@ const Chat = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [notifications, setNotifications] = useState([]);
 
-  useEffect(() => {
-    console.log("Selected User" + JSON.stringify(selectedUser));
-  }, [selectedUser])
 
   useEffect(() => {
     socket.on("new_notification", (notification) => {
       console.log("New Notification:", notification);
 
-      setNotifications((prev) => [
-        notification,
-        ...prev,
-      ]);
+      setNotifications((prev) => [notification,...prev,]);
     });
 
     return () => {

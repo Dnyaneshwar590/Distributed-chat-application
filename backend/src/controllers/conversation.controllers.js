@@ -1,7 +1,8 @@
 import { Conversation } from "../models/conversation.model.js";
 import { UserConnection } from "../models/userConnection.model.js";
 
-
+// Controller function to create new Conversation if not exist 
+// /api/v1/conversation/create-conversation
 export async function createConversation(req, res) {
 
   try {
@@ -88,10 +89,10 @@ export async function createConversation(req, res) {
 };
 
 
+// Controller for fetching conversation between user 1 and user 2 if they exist 
 export async function getConversation(req, res) {
   try {
     const currentUserId = req.user.id;
-
     // receiver user id from params
     const { receiverId } = req.params;
 
@@ -135,6 +136,9 @@ export async function getConversation(req, res) {
   }
 }
 
+
+// controller function to fetch all current user valid and accepted conversations
+// /api/v1/conversation/get-user-conversation
 export async function getUserConversation(req, res) {
 
   try {
@@ -165,14 +169,22 @@ export async function getUserConversation(req, res) {
       .populate("lastMessage", "content sender messageType mediaUrl")
       .select("-admins -groupName");
 
+    console.log("Conversation"+conversations);
+    
+
     const formattedConversations = conversations.map((conversation) => {
-      const otherParticipant = conversation.participants.find(
-        (participant) => participant._id.toString() !== userId
-      );
+      const otherParticipant = conversation.participants.find((participant) =>
+        participant._id.toString() !== userId
+    );
 
       return {
-        ...conversation.toObject(),
+        // ...conversation.toObject(),
+        _id: conversation._id,
+        isGroup: conversation.isGroup,
+        message: conversation.lastMessage,
         participant: otherParticipant,
+        createdAt: conversation.createdAt,
+        updatedAt: conversation.updatedAt
       };
     });
 

@@ -1,8 +1,36 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import api from "../services/app";
 import "../styles/components/ChatWindow.css";
 
 function ChatWindow({ selectedUser }) {
   const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!selectedUser?._id) return;
+
+    fetchMessages(selectedUser._id);
+  }, [selectedUser]);
+
+  async function fetchMessages(conversationId) {
+    try {
+      setLoading(true);
+
+      const res = await api.get(
+        `/api/v1/message/get-message/${conversationId}`
+      );
+
+      setMessages(res.data.data || []);
+    } catch (error) {
+      console.error(
+        "Fetch Messages Error:",
+        error.response?.data || error.message
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
 
   function handleSendMessage() {
     if (!message.trim()) return;
@@ -28,20 +56,14 @@ function ChatWindow({ selectedUser }) {
       <div className="chat-window-header">
         <div className="chat-window-user">
           <div className="chat-window-avatar">
-            {selectedUser.username?.charAt(0).toUpperCase()}
+            {selectedUser?.participant?.username
+              ?.charAt(0)
+              ?.toUpperCase()}
           </div>
 
           <div>
             <p className="chat-window-name">
-              {selectedUser.username}
-            </p>
-
-            <p
-              className={`chat-window-status ${
-                selectedUser.isOnline ? "online" : "offline"
-              }`}
-            >
-              {selectedUser.isOnline ? "Online" : "Offline"}
+              {selectedUser?.participant?.username}
             </p>
           </div>
         </div>
@@ -50,17 +72,26 @@ function ChatWindow({ selectedUser }) {
       {/* Messages */}
       <div className="chat-window-messages">
 
-        <div className="chat-window-message other">
-          Hello 👋
-        </div>
-
-        <div className="chat-window-message me">
-          Hi, how are you?
-        </div>
-
-        <div className="chat-window-message other">
-          I'm doing great.
-        </div>
+        {loading ? (
+          <div className="chat-window-loading">
+            Loading messages...
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="chat-window-empty-messages">
+            No messages yet. Start the conversation.
+          </div>
+        ) : (
+          messages.map((msg) => (
+            <div
+              key={msg._id}
+              className={`chat-window-message ${
+                msg.isMine ? "me" : "other"
+              }`}
+            >
+              {msg.content}
+            </div>
+          ))
+        )}
 
       </div>
 
@@ -70,9 +101,12 @@ function ChatWindow({ selectedUser }) {
           type="text"
           placeholder="Type a message..."
           value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={(e) =>
+            setMessage(e.target.value)
+          }
           onKeyDown={(e) =>
-            e.key === "Enter" && handleSendMessage()
+            e.key === "Enter" &&
+            handleSendMessage()
           }
         />
 
