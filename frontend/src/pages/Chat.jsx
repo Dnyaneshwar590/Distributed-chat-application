@@ -8,18 +8,26 @@ const Chat = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [notifications, setNotifications] = useState([]);
 
-
   useEffect(() => {
     socket.on("new_notification", (notification) => {
       console.log("New Notification:", notification);
+      setNotifications((prev) => [notification, ...prev,]);
+    });
 
-      setNotifications((prev) => [notification,...prev,]);
+    socket.on("disconnect", (reason) => {
+      console.log("Disconnected:", reason);
     });
 
     return () => {
       socket.off("new_notification");
     };
   }, []);
+
+  useEffect(() => {
+    console.log(selectedUser);
+
+    socket.emit("join_conversation", selectedUser?._id);
+  }, [selectedUser])
 
   const [input, setInput] = useState("");
   const sendMessage = () => {
@@ -30,7 +38,7 @@ const Chat = () => {
       sender: "me",
     };
 
-    setMessages((prev) => [...prev, newMsg]);
+    sendMessage((prev) => [...prev, newMsg]);
     setInput("");
   };
 

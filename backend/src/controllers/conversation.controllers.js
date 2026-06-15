@@ -169,7 +169,6 @@ export async function getUserConversation(req, res) {
       .populate("lastMessage", "content sender messageType mediaUrl")
       .select("-admins -groupName");
 
-    console.log("Conversation"+conversations);
     
 
     const formattedConversations = conversations.map((conversation) => {

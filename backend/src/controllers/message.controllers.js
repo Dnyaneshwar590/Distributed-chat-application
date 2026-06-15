@@ -21,30 +21,30 @@ export async function createMessage(req, res) {
             });
         }
 
-          // check if user are Connected/Friends or not
-            const acceptedConnReq = await UserConnection.findOne({
-              $or: [
+        // check if user are Connected/Friends or not
+        const acceptedConnReq = await UserConnection.findOne({
+            $or: [
                 {
-                  sender: sender,
-                  receiver: receiverId,
+                    sender: sender,
+                    receiver: receiverId,
                 },
                 {
-                  sender: receiverId,
-                  receiver: sender,
+                    sender: receiverId,
+                    receiver: sender,
                 }
-              ]
-            })
-        
-            if (!acceptedConnReq || acceptedConnReq.status !== "accepted") {
-              return res.status(401).json({
+            ]
+        })
+
+        if (!acceptedConnReq || acceptedConnReq.status !== "accepted") {
+            return res.status(401).json({
                 success: false,
                 message: "You Cannot Send Message."
-              })
-            }
+            })
+        }
 
         // check for existing conversation does exist or not
         const existingConversation = await Conversation.findById(conversationId);
-        
+
         if (!existingConversation) {
             return res.status(404).json({
                 success: false,
@@ -63,13 +63,12 @@ export async function createMessage(req, res) {
         }
 
         //Create message
-        const newMessage =
-            await Message.create({
-                conversationId,
-                sender,
-                content: trimmedContent,
-                readBy: [sender] // initially sender has seed the message first so we also store senders
-            });
+        const newMessage = await Message.create({
+            conversationId,
+            sender,
+            content: trimmedContent,
+            readBy: [sender] // initially sender has seed the message first so we also store senders
+        });
 
         // Update last message
         existingConversation.lastMessage = newMessage._id;
@@ -77,15 +76,14 @@ export async function createMessage(req, res) {
 
         //Populate sender details
         const populatedMessage = await Message.findById(newMessage._id)
-            .populate(
-                "sender",
-                "username email");
+            .populate("sender", "username email");
 
         // REAL TIME COMMUNICATION
-        io.to(conversationId).emit(
-            "new_message",
-            populatedMessage
-        );
+        // io.to(conversationId).emit(
+        //     "new_message",
+        //     populatedMessage
+        // );
+        io.to(receiverId).emit("receive_private_message", populatedMessage);
 
         return res.status(201).json({
             success: true,
@@ -183,7 +181,6 @@ export async function readMessage(req, res) {
         // and that message can ready by login and valid user
         const { conversationId } = req.params;
         const { id: userId } = req.user;
-
 
         const existingConversation = await Conversation.findById(conversationId);
         if (!existingConversation) {

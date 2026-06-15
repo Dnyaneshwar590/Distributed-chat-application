@@ -1,4 +1,5 @@
 import { useState } from "react";
+import socket from "../services/socket.js"
 import { useNavigate } from 'react-router-dom';
 import api from "../services/app.js";
 import "../styles/Login.css";
@@ -23,7 +24,7 @@ function Login() {
 
       setLoading(true);
       const response = await api.post("/api/v1/auth/login", formData);
-      console.log(response.data);
+      socket.connect();
       alert("Login Successful");
       navigate("/chat")
 

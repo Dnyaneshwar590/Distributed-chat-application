@@ -16,31 +16,48 @@ const io = new Server(server, {
 });
 
 // attach redis adapter
-io.adapter(createAdapter(publisher,subscriber))
+io.adapter(createAdapter(publisher, subscriber))
 io.use(socketAuthMiddleware)
 
 // Socket connections
 io.on("connection", (socket) => {
 
   const userId = socket.data.user?.id
-  console.log(userId);
-  
-    if (userId) {
-        socket.join(userId) 
-    }
+
+  if (userId) {
+    socket.join(userId);
+    console.log(`Secure identity pipeline established for: ${userId}`);
+  }
 
   //Join conversation room
-  socket.on( "join_conversation", (conversationId) => {
-      socket.join(conversationId);
-      console.log(`Socket joined room: ${conversationId}`);
-    }
-  );
+  // socket.on("join_conversation", (conversationId) => {
+  //   socket.join(conversationId);
+  //   console.log(`Socket joined room: ${conversationId}`);
+  // });
+
+  /*
+  socket.on("send_private_message", async (data) => {
+    const { receiverId, conversationId, text } = data;
+    const senderId = socket.data.user?.id; // Pulled from secure middleware
+
+    if (!senderId || !receiverId) return;
+
+    // Build standard message frame
+    const deliveryPayload = {
+      conversationId,
+      senderId,
+      text,
+      createdAt: new Date()
+    };
+    
+    io.to(receiverId).emit("receive_private_message", deliveryPayload);
+  });
+  */
+
 
   // Disconnect
   socket.on("disconnect", () => {
-
-    console.log("User disconnected:",socket.id);
-
+    console.log("User disconnected:", socket.id);
   });
 
 });
