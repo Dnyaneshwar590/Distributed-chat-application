@@ -1,17 +1,19 @@
 import { useEffect, useState } from "react";
 import "../styles/Chat.css";
+import toast from "react-hot-toast";
 import socket from "../services/socket.js"
 import ChatSidebar from "../components/ChatSidebar";
 import ChatWindow from "../components/ChatWindow";
 
 const Chat = () => {
   const [selectedUser, setSelectedUser] = useState(null);
-  const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
     socket.on("new_notification", (notification) => {
-      console.log("New Notification:", notification);
-      setNotifications((prev) => [notification, ...prev,]);
+      console.log("New Notification:", notification.text);
+      toast.success(notification.text, {
+        duration: 10000,
+      });
     });
 
     socket.on("disconnect", (reason) => {
