@@ -11,18 +11,13 @@ function ChatWindow({ selectedUser }) {
 
   useEffect(() => {
     if (!selectedUser?._id) return;
-
     fetchMessages(selectedUser._id);
   }, [selectedUser]);
 
   async function fetchMessages(conversationId) {
     try {
       setLoading(true);
-
-      const res = await api.get(
-        `/api/v1/message/get-message/${conversationId}`
-      );
-
+      const res = await api.get(`/api/v1/message/get-message/${conversationId}`);
       setMessages(res.data.data || []);
     } catch (error) {
       console.error(
@@ -142,8 +137,7 @@ function ChatWindow({ selectedUser }) {
           messages.map((msg) => (
             <div
               key={msg._id}
-              className={`chat-window-message ${msg.isMine ? "me" : "other"
-                }`}>
+              className={`chat-window-message ${msg.isMine ? "me" : "other"}`}>
               {msg.content}
             </div>
           ))

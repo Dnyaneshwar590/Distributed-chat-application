@@ -112,6 +112,7 @@ export async function getMessage(req, res) {
     try {
 
         const { conversationId } = req.params;
+        const { id: loggedInUser } = req.user;
         const limit = Number(req.query.limit) || 20;
         const { cursor } = req.query;
 
@@ -137,21 +138,21 @@ export async function getMessage(req, res) {
 
         // Fetch messages
         const messages = await Message.find(query)
-            .populate(
-                "sender",
-                "username email"
-            )
-            .sort({
-                _id: -1
-            })
+            .populate("sender", "username email")
+            .sort({ _id: -1 })
             .limit(limit);
 
-        // Next cursor
-        const nextCursor = messages.length === limit ?
-            messages[messages.length - 1]._id :
-            null;
+        const customizedMessages = messages.map((message) => ({
+            ...message.toObject(),
+            // if logged in user id is equal to sender id then logged in user have sent the 
+            // message if not he receive the message
+            isMine: message.sender._id.toString() === loggedInUser ? true : false,
+        }));
 
-        const formattedMessages = messages.reverse();
+        // Next cursor
+        const nextCursor = customizedMessages.length === limit ? customizedMessages[messages.length - 1]._id : null;
+
+        const formattedMessages = customizedMessages.reverse();
 
         return res.status(200).json({
             success: true,
