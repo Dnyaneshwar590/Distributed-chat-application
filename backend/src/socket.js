@@ -1,5 +1,6 @@
 import { Server } from "socket.io";
 import { app } from "./app.js";
+import redis from "./redis/client.redis.js";
 import http from "http";
 
 import { createAdapter } from "@socket.io/redis-adapter";
@@ -15,51 +16,106 @@ const io = new Server(server, {
   }
 });
 
-// attach redis adapter
 io.adapter(createAdapter(publisher, subscriber))
 io.use(socketAuthMiddleware)
 
-// Socket connections
-io.on("connection", (socket) => {
+// Helper to refresh TTL
+async function refreshSocketTTL(userId, socketId) {
+  await redis.set(
+    `presence:user:${userId}:socket:${socketId}`,
+    "online",
+    "EX",
+    60
+  );
+}
 
+// Helper to check if user has other open tabs
+async function isUserOnline(userId) {
+  const keys = await redis.keys(`presence:user:${userId}:socket:*`);
+  return keys.length > 0;
+}
+
+// Helper to get all online users safely (for newly connected clients)
+async function getOnlineUserIds() {
+  const uniqueUsers = new Set();
+  let cursor = '0';
+  do {
+    const [nextCursor, keys] = await redis.scan(cursor,
+      "MATCH",
+      "presence:user:*:socket:*",
+      "COUNT",
+      100);
+    cursor = nextCursor;
+    for (const key of keys) {
+      const parts = key.split(":");
+      if (parts[2]) uniqueUsers.add(parts[2]);
+    }
+  } while (cursor !== '0');
+  return Array.from(uniqueUsers);
+}
+
+// Socket connections
+io.on("connection", async (socket) => {
   const userId = socket.data.user?.id
 
   if (userId) {
     socket.join(userId);
-    console.log(`Secure identity pipeline established for: ${userId}`);
+
+    // Check if this is their FIRST tab opening (were they already offline?)
+    const alreadyOnline = await isUserOnline(userId);
+
+    await refreshSocketTTL(userId, socket.id);
+
+    // Send the full list of currently online users ONLY to this joining user
+    const currentOnlineUsers = await getOnlineUserIds();
+    socket.emit("initial-online-list", currentOnlineUsers);
+
+    // If they weren't online before, broadcast to EVERYONE else that they just logged in
+    if (!alreadyOnline) {
+      socket.broadcast.emit("user-status-changed", { userId, status: "online" });
+    }
+
+    // Heartbeat listener
+    socket.on("presence-heartbeat", async () => {
+      await refreshSocketTTL(userId, socket.id);
+    });
   }
 
-  //Join conversation room
-  // socket.on("join_conversation", (conversationId) => {
-  //   socket.join(conversationId);
-  //   console.log(`Socket joined room: ${conversationId}`);
-  // });
+  // Clean Disconnect (Close tab / Logout)
+  socket.on("disconnect", async () => {
+    if (userId) {
+      await redis.del(`presence:user:${userId}:socket:${socket.id}`);
 
-  /*
-  socket.on("send_private_message", async (data) => {
-    const { receiverId, conversationId, text } = data;
-    const senderId = socket.data.user?.id; // Pulled from secure middleware
-
-    if (!senderId || !receiverId) return;
-
-    // Build standard message frame
-    const deliveryPayload = {
-      conversationId,
-      senderId,
-      text,
-      createdAt: new Date()
-    };
-    
-    io.to(receiverId).emit("receive_private_message", deliveryPayload);
+      const stillOnline = await isUserOnline(userId);
+      if (!stillOnline) {
+        // Broadcast to everyone else that this user went completely offline
+        io.emit("user-status-changed", { userId, status: "offline" });
+      }
+    }
   });
-  */
+});
 
 
-  // Disconnect
-  socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
-  });
+// REDIS KEYSPACE NOTIFICATION: Catches silent TTL Expirations (Dirty Disconnects)
+await subscriber.subscribe('__keyevent@0__:expired');
+subscriber.on('message', async (channel, key) => {
+  if (!key) return;
+  console.log("CHANNEL:", channel);
+  console.log("EXPIRED KEY:", key);
 
+  if (key.startsWith('presence:user:')) {
+    const parts = key.split(':');
+    const userId = parts[2];
+
+    const stillOnline = await isUserOnline(userId);
+
+    if (!stillOnline) {
+      io.emit("user-status-changed", {
+        userId,
+        status: "offline"
+      });
+    }
+  }
 });
 
 export { server, io };

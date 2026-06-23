@@ -4,7 +4,8 @@ import socket  from "../services/socket.js"
 import { CirclePlus } from "lucide-react";
 import "../styles/components/UserList.css";
 
-export default function UserList() {
+// 1. Accept onlineUsers as a prop from ChatSidebar.jsx
+export default function UserList({ onlineUsers = [] }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sendingId, setSendingId] = useState(null);
@@ -44,9 +45,6 @@ export default function UserList() {
           friendRequestUserId: userId,
         }
       );
-
-    //   console.log("Connection Request Response:", response.data)
-
 
       alert("Connection request sent successfully!");
     } catch (error) {
@@ -88,76 +86,85 @@ export default function UserList() {
             No users found
           </div>
         ) : (
-          users.map((user) => (
-            <div
-              key={user._id}
-              className="user-list-item"
-            >
-              {/* AVATAR */}
-              <div className="user-list-avatar">
-                {user.avatar ? (
-                  <img
-                    src={user.avatar}
-                    alt={user.username}
-                    className="user-avatar-image"
-                  />
-                ) : (
-                  user.username?.charAt(0)?.toUpperCase()
-                )}
-              </div>
+          users.map((user) => {
+            // 2. BULLETPROOF REAL-TIME IDENTIFICATION MATCHING
+            // Cross-reference user._id against the live onlineUsers array
+            const isUserCurrentlyOnline = onlineUsers.some(
+              (onlineId) => String(onlineId) === String(user._id)
+            );
 
-              {/* USER INFO */}
-              <div className="user-list-info">
-                <div className="user-name-row">
-                  <span className="user-name">
-                    {user.username}
-                  </span>
-
-                  <span
-                    className={`user-status ${
-                      user.isOnline
-                        ? "online"
-                        : "offline"
-                    }`}
-                  >
-                    {user.isOnline
-                      ? "● Online"
-                      : "● Offline"}
-                  </span>
-                </div>
-
-                <div className="user-email">
-                  {user.email}
-                </div>
-
-                {!user.isOnline && (
-                  <div className="user-last-seen">
-                    Last seen:{" "}
-                    {formatLastSeen(user.lastSeen)}
-                  </div>
-                )}
-              </div>
-
-              {/* SEND CONNECTION REQUEST */}
-              <button
-                className="friend-request-icon-btn"
-                onClick={() =>
-                  sendFriendRequest(user._id)
-                }
-                disabled={sendingId === user._id}
-                title="Send Connection Request"
+            return (
+              <div
+                key={user._id}
+                className="user-list-item"
               >
-                <CirclePlus
-                  size={22}
-                  color={
-                    sendingId === user._id
-                      ? "#999"
-                      : "#111"
+                {/* AVATAR */}
+                <div className="user-list-avatar">
+                  {user.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt={user.username}
+                      className="user-avatar-image"
+                    />
+                  ) : (
+                    user.username?.charAt(0)?.toUpperCase()
+                  )}
+                  
+                  {/* Visual upgrade option: Render an explicit badge on avatar if online */}
+                  {isUserCurrentlyOnline && <div className="avatar-online-badge" />}
+                </div>
+
+                {/* USER INFO */}
+                <div className="user-list-info">
+                  <div className="user-name-row">
+                    <span className="user-name">
+                      {user.username}
+                    </span>
+
+                    {/* 3. Render real-time status dynamically based on our match */}
+                    <span
+                      className={`user-status ${
+                        isUserCurrentlyOnline ? "online" : "offline"
+                      }`}
+                    >
+                      {isUserCurrentlyOnline ? "● Online" : "● Offline"}
+                    </span>
+                  </div>
+
+                  <div className="user-email">
+                    {user.email}
+                  </div>
+
+                  {/* 4. Only show last seen if they are truly offline right now */}
+                  {!isUserCurrentlyOnline && (
+                    <div className="user-last-seen">
+                      Last seen:{" "}
+                      {formatLastSeen(user.lastSeen)}
+                    </div>
+                  )}
+                </div>
+
+                {/* SEND CONNECTION REQUEST */}
+                <button
+                  className="friend-request-icon-btn"
+                  onClick={() =>
+                    sendFriendRequest(user._id)
                   }
-                />
-              </button>
-            </div>
-          ))
+                  disabled={sendingId === user._id}
+                  title="Send Connection Request"
+                >
+                  <CirclePlus
+                    size={22}
+                    color={
+                      sendingId === user._id
+                        ? "#999"
+                        : "#111"
+                    }
+                  />
+                </button>
+              </div>
+            );
+          })
         )}
       </div>
     </div>
