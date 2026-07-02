@@ -34,7 +34,6 @@ A real-time distributed chat application built with Node.js, Socket.io, Redis, a
 - Axios (with silent token refresh interceptor)
 - Socket.io client
 - React Router v7
-- Zustand
 - React Hot Toast
 - Lucide React
 

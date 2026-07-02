@@ -45,7 +45,9 @@ async function getOnlineUserIds() {
       "presence:user:*:socket:*",
       "COUNT",
       100);
+
     cursor = nextCursor;
+
     for (const key of keys) {
       const parts = key.split(":");
       if (parts[2]) uniqueUsers.add(parts[2]);
